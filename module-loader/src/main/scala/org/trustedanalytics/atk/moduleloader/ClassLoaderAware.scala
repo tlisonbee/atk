@@ -16,22 +16,26 @@
 
 package org.trustedanalytics.atk.moduleloader
 
-import org.scalatest.WordSpec
-import org.mockito.Mockito._
-import org.scalatest.mock.MockitoSugar
+trait ClassLoaderAware {
 
-class ModuleTest extends WordSpec with MockitoSugar {
-
-  "Module" should {
-    "use its classloader" in {
-      val className = "MyClass"
-      val classLoader = mock[ClassLoader]
-      when(classLoader.loadClass(className)).thenReturn(null)
-      val module = new Module("myname", parentName = None, jarNames = Nil, classLoader)
-      val result = module.loadClass(className)
-      assert(result == null)
-      verify(classLoader, times(1)).loadClass(className)
-    }
+  /**
+   * Execute a code block setting the ContextClassLoader to the ClassLoader of 'this' class
+   */
+  def withMyClassLoader[T](expr: => T): T = {
+    withContextCloassLoader(this.getClass.getClassLoader)(expr)
   }
 
+  /**
+   * Execute a code block using specified class loader as the ContextClassLoader
+   */
+  def withContextCloassLoader[T](loader: ClassLoader)(expr: => T): T = {
+    val prior = Thread.currentThread().getContextClassLoader
+    try {
+      Thread.currentThread().setContextClassLoader(loader)
+      expr
+    }
+    finally {
+      Thread.currentThread().setContextClassLoader(prior)
+    }
+  }
 }

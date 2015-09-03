@@ -16,11 +16,13 @@
 
 package org.trustedanalytics.atk.moduleloader.internal
 
-import java.net.URLClassLoader
+import java.io.File
+import java.net.{ URL, URLClassLoader }
 
 import org.trustedanalytics.atk.moduleloader.Module
 
 import scala.collection.mutable
+import scala.util.Try
 
 /**
  * Search the searchPath, find all modules, load their config, and initializes them with ClassLoaders setup appropriately
@@ -29,6 +31,7 @@ private[moduleloader] class ModuleLoader(searchPath: SearchPath) {
 
   /**
    * Search the searchPath, find all modules, load their config, and initializes them with ClassLoaders setup appropriately
+   * @return map with module names as keys and the modules as values
    */
   private[moduleloader] def load(): Map[String, Module] = {
     val configs = loadModuleConfigs()
@@ -100,7 +103,7 @@ private[moduleloader] class ModuleLoader(searchPath: SearchPath) {
         classLoaders.put(name, null)
 
         val moduleConfig = configsMap(name)
-        val urls = searchPath.findJars(moduleConfig.jarNames)
+        val urls = jarUrls(moduleConfig)
         val classLoader = moduleConfig.parentName match {
           case Some(parentName) => new URLClassLoader(urls, resolveClassLoader(parentName))
           case None => new URLClassLoader(urls)
@@ -115,6 +118,22 @@ private[moduleloader] class ModuleLoader(searchPath: SearchPath) {
       val name = moduleConfig.name
       name -> moduleConfig.toModule(resolveClassLoader(name))
     }).toMap
+  }
+
+  private[internal] def jarUrls(moduleConfig: ModuleConfig): Array[URL] = {
+    try {
+      searchPath.findJars(moduleConfig.jarNames)
+    }
+    catch {
+      case e: Exception =>
+        try {
+          val developerSearchPath = new SearchPath(moduleConfig.buildClasspath.mkString(":"))
+          developerSearchPath.findJars(moduleConfig.jarNames)
+        }
+        catch {
+          case e2: Exception => throw e
+        }
+    }
   }
 
   /**

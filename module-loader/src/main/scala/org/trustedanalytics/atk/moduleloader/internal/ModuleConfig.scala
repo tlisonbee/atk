@@ -72,15 +72,15 @@ private[internal] case class ModuleConfig(moduleLocation: String, config: Config
     (myJarNames ++ memberJarNames).distinct
   }
 
-  lazy val commandPlugins: Seq[String] = {
-    val myPlugins = if (config.hasPath("atk.module.command-plugins")) {
-      config.getStringList("atk.module.command-plugins").toSeq
+  lazy val buildClasspath: Seq[String] = {
+    val myJars = if (config.hasPath("atk.module.build-classpath")) {
+      config.getString("atk.module.build-classpath").split(":").toSeq
     }
     else {
       Nil
     }
-    val memberPlugins = members.flatMap(_.commandPlugins)
-    myPlugins ++ memberPlugins
+    val memberJars = members.flatMap(_.buildClasspath)
+    (myJars ++ memberJars).distinct
   }
 
   override def toString: String = {
@@ -102,7 +102,7 @@ private[internal] case class ModuleConfig(moduleLocation: String, config: Config
    * Use this config and the supplied classLoader to instantiate a Module
    */
   def toModule(classLoader: ClassLoader): Module = {
-    new Module(name, parentName, jarNames, commandPlugins, classLoader)
+    new Module(name, parentName, jarNames, classLoader)
   }
 
   /**
