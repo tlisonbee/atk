@@ -1,3 +1,5 @@
+package org.trustedanalytics.atk.engine
+
 /*
 // Copyright (c) 2015 Intel Corporation 
 //
@@ -13,21 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 */
+trait EngineApplication {
 
-package org.trustedanalytics.atk.engine
-
-import org.trustedanalytics.atk.engine.command._
-import org.trustedanalytics.atk.engine.gc.GarbageCollector
-import org.trustedanalytics.atk.engine.util.{ EnvironmentLogger, JvmVersionReporter }
-
-/**
- * Main class for initializing the Spark Engine
- */
-class EngineComponent extends AbstractEngineComponent {
-  EnvironmentLogger.log()
-  EngineConfig.logSettings()
-  JvmVersionReporter.check()
-  metaStore.initializeSchema()
-  fileStorage.syncLibs()
-  GarbageCollector.startup(metaStore, frameFileStorage, backendGraphStorage)
+  def engine: Engine
 }
